@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,11 @@ const IncidentMapContent = lazy(() => import('./IncidentMapContent'));
 
 const IncidentMap = () => {
   const [stats, setStats] = useState({ critical: 0, pending: 0 });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <motion.div
@@ -35,11 +40,15 @@ const IncidentMap = () => {
         </CardHeader>
 
         <CardContent className="p-3">
-          <Suspense fallback={<div className="h-64 bg-muted/50 rounded-xl animate-pulse" />}>
-            <IncidentMapContent 
-              onStatsChange={(critical, pending) => setStats({ critical, pending })} 
-            />
-          </Suspense>
+          {!mounted ? (
+            <div className="h-64 bg-muted/50 rounded-xl animate-pulse" />
+          ) : (
+            <Suspense fallback={<div className="h-64 bg-muted/50 rounded-xl animate-pulse" />}>
+              <IncidentMapContent
+                onStatsChange={(critical, pending) => setStats({ critical, pending })}
+              />
+            </Suspense>
+          )}
         </CardContent>
       </Card>
     </motion.div>
