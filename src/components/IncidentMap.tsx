@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -9,30 +9,70 @@ import { Badge } from '@/components/ui/badge';
 import { fetchSOSIncidents, type SOSIncident } from '@/data/mockData';
 import { AlertTriangle, Users, Ambulance, Package, Home } from 'lucide-react';
 
-// Custom marker icons
-const createCustomIcon = (severity: string) => {
-  const colors: Record<string, string> = {
-    critical: '#e11d48',
-    high: '#f59e0b',
-    medium: '#3b82f6',
-  };
+// Fix for default marker icons
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-  return L.divIcon({
+const DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Custom marker icons - created once and reused
+const markerIcons: Record<string, L.DivIcon> = {
+  critical: L.divIcon({
     className: 'custom-marker',
     html: `
       <div style="
         width: 24px;
         height: 24px;
-        background: ${colors[severity] || colors.medium};
+        background: #e11d48;
         border: 3px solid white;
         border-radius: 50%;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        animation: pulse 1.5s ease-in-out infinite;
       "></div>
     `,
     iconSize: [24, 24],
     iconAnchor: [12, 12],
-  });
+  }),
+  high: L.divIcon({
+    className: 'custom-marker',
+    html: `
+      <div style="
+        width: 24px;
+        height: 24px;
+        background: #f59e0b;
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      "></div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  }),
+  medium: L.divIcon({
+    className: 'custom-marker',
+    html: `
+      <div style="
+        width: 24px;
+        height: 24px;
+        background: #3b82f6;
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      "></div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  }),
+};
+
+const getMarkerIcon = (severity: string) => {
+  return markerIcons[severity] || markerIcons.medium;
 };
 
 // Map bounds controller
@@ -68,7 +108,7 @@ const IncidentMap = () => {
   const { data: incidents = [], isLoading } = useQuery({
     queryKey: ['sosIncidents'],
     queryFn: fetchSOSIncidents,
-    refetchInterval: 10000, // Simulate real-time updates
+    refetchInterval: 10000,
   });
 
   const criticalCount = incidents.filter((i) => i.severity === 'critical').length;
@@ -119,7 +159,7 @@ const IncidentMap = () => {
                   <Marker
                     key={incident.id}
                     position={incident.coordinates}
-                    icon={createCustomIcon(incident.severity)}
+                    icon={getMarkerIcon(incident.severity)}
                   >
                     <Popup className="custom-popup">
                       <div className="p-2 min-w-[200px]">
